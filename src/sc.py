@@ -1,11 +1,11 @@
 #! /usr/bin/env python
 """
-usage: sc [FILE] ...
+usage: sc [--spec <file>] [<file> ...]
 
 options:
-  -v, --version
-  -h, --help
-  --spec
+  -v, --version   Print the version
+  -h, --help      Print this help menu
+  --spec <file>   Specify the set of rules to check
 """
 import os
 import sys
@@ -110,7 +110,7 @@ def CheckLine(filename, linenum, line, ruleset):
 	for rule in ruleset:
 		ruleset[rule](filename, linenum, line)
 
-def ProcessFileData(filename, lines):
+def ProcessFileData(filename, lines, spec):
 	# Create example rule set
 	rules = {}
 	#rules[no_tabs.func_name] = no_tabs
@@ -120,10 +120,10 @@ def ProcessFileData(filename, lines):
 
 	linenum = 1
 	for line in lines:
-		CheckLine(filename, linenum, line, rules)
+		CheckLine(filename, linenum, line, spec)
 		linenum += 1
 
-def ProcessFile(filename):
+def ProcessFile(filename, spec):
 	# Note, if no dot is found, this will give the entire filename as the ext.
 	file_extension = filename[filename.rfind('.') + 1:]
 
@@ -162,11 +162,26 @@ def ProcessFile(filename):
 			sys.stderr.write(
 			    "Skipping input '%s': Can't open for reading\n" % filename)
 			return
-		ProcessFileData(filename, lines)
+		ProcessFileData(filename, lines, spec)
+
 
 def main(argv):
-	for filename in argv['FILE']:
-		ProcessFile(filename)
+	spec = {}
+	if '--spec' in argv:
+		specfile = open(argv['--spec'], 'r')
+		lines = specfile.readlines()
+		# Check if a file to import all rules within the file
+		for line in lines:
+			if os.path.isfile(line):
+				specfile = open(line, 'r')
+				lines += specfile.readlines()
+		# Remove all newlines
+		lines = [line.strip() for line in lines]
+		for i, line in enumerate(lines):
+			# Set spec value to the method with the same name as the string
+			spec[i] = getattr(sys.modules[__name__], line)
+	for filename in argv['<file>']:
+		ProcessFile(filename, spec)
 
 if __name__ == '__main__':
 	args = docopt(__doc__, version='0.1.0rc')
