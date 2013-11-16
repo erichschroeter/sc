@@ -110,6 +110,28 @@ def CheckLine(filename, linenum, line, ruleset):
 	for rule in ruleset:
 		ruleset[rule](filename, linenum, line)
 
+def AggregateRules(filename):
+	'''Recursively aggregates rules from the specified filename. If a line in
+	filename is another filename, the rules are aggregated from that file.
+	'''
+	f = open(filename, 'r')
+	lines = f.readlines()
+	lines = set(lines)
+	# Remove all newlines
+	lines = [line.strip() for line in lines]
+	to_remove = []
+	# Check if line is a file to import all rules within the file
+	for line in lines:
+		to_remove += line
+		filepath = os.path.abspath(os.path.dirname(filename)) + os.sep + line.strip()
+		if os.path.isfile(filepath):
+			more = AggregateRules(filepath)
+			lines = set(list(lines) + list(more))
+	return set(lines)
+	#for i, line in enumerate(lines):
+		## Set spec value to the method with the same name as the string
+		#spec[i] = getattr(sys.modules[__name__], line)
+
 def ProcessFileData(filename, lines, spec):
 	# Create example rule set
 	rules = {}
@@ -167,19 +189,19 @@ def ProcessFile(filename, spec):
 
 def main(argv):
 	spec = {}
-	if '--spec' in argv:
-		specfile = open(argv['--spec'], 'r')
-		lines = specfile.readlines()
-		# Check if a file to import all rules within the file
-		for line in lines:
-			if os.path.isfile(line):
-				specfile = open(line, 'r')
-				lines += specfile.readlines()
-		# Remove all newlines
-		lines = [line.strip() for line in lines]
-		for i, line in enumerate(lines):
-			# Set spec value to the method with the same name as the string
-			spec[i] = getattr(sys.modules[__name__], line)
+	if argv['--spec'] is not None:
+		spec = AggregateRules(argv['--spec'])
+		spec = dict.fromkeys(spec, 0)
+		# keep track of keys to delete that do not have a respective method since
+		# we cannot modify the dict as we iterate over it
+		todel = []
+		for k in spec.iterkeys():
+			try:
+				spec[k] = getattr(sys.modules[__name__], k)
+			except:
+				todel.append(k)
+		for k in todel:
+			del spec[k]
 	for filename in argv['<file>']:
 		ProcessFile(filename, spec)
 
