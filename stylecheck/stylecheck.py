@@ -187,7 +187,8 @@ def ProcessFile(filename, spec):
 		ProcessFileData(filename, lines, spec)
 
 
-def main(argv):
+def main():
+	argv = docopt(__doc__, version='0.1.0rc')
 	spec = {}
 	if argv['--spec'] is not None:
 		spec = AggregateRules(argv['--spec'])
@@ -206,6 +207,5 @@ def main(argv):
 		ProcessFile(filename, spec)
 
 if __name__ == '__main__':
-	args = docopt(__doc__, version='0.1.0rc')
-	main(args)
+	main()
 
