@@ -94,6 +94,14 @@ def indent_tab_only(filename, linenum, line):
 	if not indent_is_only(line, '\t'):
 		error(filename, linenum, indent_tab_only)
 
+@rule
+@category('whitespace/function')
+def function_no_whitespace_before_parenthesis(filename, linenum, line):
+	u"""Whitespace between function and parenthesis"""
+	parts = line.split('(')
+	if parts[0][-1:].isspace():
+		error(filename, linenum, function_no_whitespace_before_parenthesis)
+
 def error(filename, linenum, rule):
 	assert len(rule.__doc__) > 0
 	if rule in categories:
