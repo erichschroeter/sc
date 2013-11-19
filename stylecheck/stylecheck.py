@@ -1,11 +1,12 @@
 #! /usr/bin/env python
 """
-usage: sc [--spec <file>] [<file> ...]
+usage: sc [options] <file>...
 
 options:
   -v, --version   Print the version
   -h, --help      Print this help menu
   --spec <file>   Specify the set of rules to check
+  --color         Use color output
 """
 import os
 import sys
@@ -14,6 +15,16 @@ import string
 
 from docopt import docopt
 
+color_red = '\033[31m'
+color_green = '\033[32m'
+color_yellow = '\033[33m'
+color_blue = '\033[34m'
+color_purple = '\033[35m'
+color_cyan = '\033[36m'
+color_white = '\033[37m'
+color_reset = '\033[00m'
+
+colorize = False
 rules = {}
 categories = {}
 
@@ -115,10 +126,14 @@ def error(filename, linenum, rule):
 		txt = u"%s:%d:  %s  [%s]" % (filename, linenum, rule.__doc__, categories[rule])
 	else:
 		txt = u"%s:%d:  %s" % (filename, linenum, rule.__doc__)
-	console_print(txt, sys.stderr)
+	console_print(txt, sys.stderr, color=color_red)
 
-def console_print(st=u"", f=sys.stdout, linebreak=True):
-	f.write(st)
+def console_print(st=u"", f=sys.stdout, linebreak=True, color=None):
+	global colorize
+	if colorize is True and color is not None:
+		f.write(color + st + color_reset)
+	else:
+		f.write(st)
 	if linebreak: f.write(os.linesep)
 
 def CheckLine(filename, linenum, line, ruleset):
@@ -203,8 +218,10 @@ def ProcessFile(filename, spec):
 
 
 def main():
+	global colorize
 	argv = docopt(__doc__, version='0.1.0rc')
 	spec = {}
+	colorize = argv['--color']
 	if argv['--spec'] is not None:
 		spec = AggregateRules(argv['--spec'])
 		spec = dict.fromkeys(spec, 0)
