@@ -95,6 +95,13 @@ def indent_tab_only(filename, linenum, line):
 		error(filename, linenum, indent_tab_only)
 
 @rule
+@category('whitespace/extra')
+def no_extra_whitespace(filename, linenum, line):
+	u"""Extra whitespace"""
+	if line[-1:].isspace():
+		error(filename, linenum, no_extra_whitespace)
+
+@rule
 @category('whitespace/function')
 def function_no_whitespace_before_parenthesis(filename, linenum, line):
 	u"""Whitespace between function and parenthesis"""
