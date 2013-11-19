@@ -179,42 +179,37 @@ def ProcessFile(filename, spec):
 	# Note, if no dot is found, this will give the entire filename as the ext.
 	file_extension = filename[filename.rfind('.') + 1:]
 
-	valid_extensions = ['py', 'c', 'h']
-	if filename != '-' and file_extension not in valid_extensions:
-		sys.stderr.write('Ignoring %s; not a valid file name '
-			'(.c, .h)\n' % filename)
-	else:
-		try:
-			# Support the UNIX convention of using "-" for stdin.  Note that
-			# we are not opening the file with universal newline support
-			# (which codecs doesn't support anyway), so the resulting lines do
-			# contain trailing '\r' characters if we are reading a file that
-			# has CRLF endings.
-			# If after the split a trailing '\r' is present, it is removed
-			# below. If it is not expected to be present (i.e. os.linesep !=
-			# '\r\n' as in Windows), a warning is issued below if this file
-			# is processed.
-			
-			if filename == '-':
-			  lines = codecs.StreamReaderWriter(sys.stdin,
-			                                    codecs.getreader('utf8'),
-			                                    codecs.getwriter('utf8'),
-			                                    'replace').read().split('\n')
-			else:
-			  lines = codecs.open(filename, 'r', 'utf8', 'replace').read().split('\n')
-			
-			carriage_return_found = False
-			# Remove trailing '\r'.
-			for linenum in range(len(lines)):
-			  if lines[linenum].endswith('\r'):
-			    lines[linenum] = lines[linenum].rstrip('\r')
-			    carriage_return_found = True
-		
-		except IOError:
-			sys.stderr.write(
-			    "Skipping input '%s': Can't open for reading\n" % filename)
-			return
-		ProcessFileData(filename, lines, spec)
+	try:
+		# Support the UNIX convention of using "-" for stdin.  Note that
+		# we are not opening the file with universal newline support
+		# (which codecs doesn't support anyway), so the resulting lines do
+		# contain trailing '\r' characters if we are reading a file that
+		# has CRLF endings.
+		# If after the split a trailing '\r' is present, it is removed
+		# below. If it is not expected to be present (i.e. os.linesep !=
+		# '\r\n' as in Windows), a warning is issued below if this file
+		# is processed.
+
+		if filename == '-':
+		  lines = codecs.StreamReaderWriter(sys.stdin,
+						    codecs.getreader('utf8'),
+						    codecs.getwriter('utf8'),
+						    'replace').read().split('\n')
+		else:
+		  lines = codecs.open(filename, 'r', 'utf8', 'replace').read().split('\n')
+
+		carriage_return_found = False
+		# Remove trailing '\r'.
+		for linenum in range(len(lines)):
+		  if lines[linenum].endswith('\r'):
+		    lines[linenum] = lines[linenum].rstrip('\r')
+		    carriage_return_found = True
+
+	except IOError:
+		sys.stderr.write(
+		    "Skipping input '%s': Can't open for reading\n" % filename)
+		return
+	ProcessFileData(filename, lines, spec)
 
 
 def main():
