@@ -163,13 +163,6 @@ def AggregateRules(filename):
 		#spec[i] = getattr(sys.modules[__name__], line)
 
 def ProcessFileData(filename, lines, spec):
-	# Create example rule set
-	rules = {}
-	#rules[no_tabs.func_name] = no_tabs
-	rules[indent_tab_only.func_name] = indent_tab_only
-	#rules[indent_space_only.func_name] = indent_space_only
-	rules[indent_no_mixed_whitespace.func_name] = indent_no_mixed_whitespace
-
 	linenum = 1
 	for line in lines:
 		CheckLine(filename, linenum, line, spec)
