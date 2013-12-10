@@ -12,6 +12,7 @@ import os
 import sys
 import codecs
 import string
+import importlib
 
 from docopt import docopt
 
@@ -25,108 +26,15 @@ color_white = '\033[37m'
 color_reset = '\033[00m'
 
 colorize = False
-rules = {}
 categories = {}
-
-def rule(method):
-	global rules
-	assert method.__doc__, "All rules need properly formmatted docstrings (even %r!!)" % method
-	if hasattr(method, 'im_func'): # bound method, if we ever have one
-		method = method.im_func
-	rules[method.func_name] = method
-	return method
-
-def category(name):
-	def decorator(method):
-		global categories
-		assert method not in categories, "This method already has a category."
-		categories[method] = name
-		return method
-	return decorator
-
-@rule
-@category('whitespace/tab')
-def no_tabs(filename, linenum, line):
-	u"""Tab found; better to use spaces"""
-	if line.find('\t') != -1:
-		error(filename, linenum, no_tabs)
-
-@rule
-@category('whitespace/indent')
-def indent_no_mixed_whitespace(filename, linenum, line):
-	u"""Indentation should not mix whitepsace characters"""
-	if len(line) < 1:
-		return
-	if line[0:1] not in string.whitespace:
-		return
-	whitespace_char = line[0:1]
-	# Strip whitespace to find first non-whitespace char
-	stripped = line.strip(string.whitespace)
-	if len(stripped) < 1:
-		return
-	first_non_whitespace = stripped[0:1]
-	for i, c in enumerate(line):
-		if c == first_non_whitespace:
-			break
-		if c != whitespace_char:
-			error(filename, linenum, indent_no_mixed_whitespace)
-			break
-
-def indent_is_only(line, whitespace):
-	"""Returns whether the line is indented with the specified whitespace.
-
-	Checks from the beginning of line for any whitespace and if the char is
-	whitespace but not the specified whitespace False is returned.
-	Otherwise True is returned.
-	"""
-	if line.count < 1:
-		return True
-	first_non_whitespace = 0
-	for i, c in enumerate(line):
-		if c not in string.whitespace:
-			first_non_whitespace = i
-			break
-		# make sure indent is space
-		if c != whitespace:
-			return False
-	return True
-
-@rule
-@category('whitespace/indent')
-def indent_space_only(filename, linenum, line):
-	u"""Indent with spaces"""
-	if not indent_is_only(line, ' '):
-		error(filename, linenum, indent_space_only)
-
-@rule
-@category('whitespace/indent')
-def indent_tab_only(filename, linenum, line):
-	u"""Indent with tabs"""
-	if not indent_is_only(line, '\t'):
-		error(filename, linenum, indent_tab_only)
-
-@rule
-@category('whitespace/extra')
-def no_extra_whitespace(filename, linenum, line):
-	u"""Extra whitespace"""
-	if line[-1:].isspace():
-		error(filename, linenum, no_extra_whitespace)
-
-@rule
-@category('whitespace/function')
-def function_no_whitespace_before_parenthesis(filename, linenum, line):
-	u"""Whitespace between function and parenthesis"""
-	parts = line.split('(')
-	if parts[0][-1:].isspace():
-		error(filename, linenum, function_no_whitespace_before_parenthesis)
 
 def error(filename, linenum, rule):
 	assert len(rule.__doc__) > 0
-	if rule in categories:
-		txt = u"%s:%d:  %s  [%s]" % (filename, linenum, rule.__doc__, categories[rule])
+	if rule.category != '':
+		txt = u"%s:%d:  %s  [%s]" % (filename, linenum, rule.__doc__, rule.category)
 	else:
 		txt = u"%s:%d:  %s" % (filename, linenum, rule.__doc__)
-	console_print(txt, sys.stderr, color=color_red)
+	console_print(txt, color=color_red)
 
 def console_print(st=u"", f=sys.stdout, linebreak=True, color=None):
 	global colorize
@@ -136,9 +44,11 @@ def console_print(st=u"", f=sys.stdout, linebreak=True, color=None):
 		f.write(st)
 	if linebreak: f.write(os.linesep)
 
-def CheckLine(filename, linenum, line, ruleset):
-	for rule in ruleset:
-		ruleset[rule](filename, linenum, line)
+def CheckLine(filename, linenum, line, rules):
+	for rule in rules:
+		passed = rule.check(line)
+		if not passed:
+			error(filename, linenum, rule)
 
 def AggregateRules(filename):
 	'''Recursively aggregates rules from the specified filename. If a line in
@@ -147,20 +57,18 @@ def AggregateRules(filename):
 	f = open(filename, 'r')
 	lines = f.readlines()
 	lines = set(lines)
-	# Remove all newlines
-	lines = [line.strip() for line in lines]
-	to_remove = []
-	# Check if line is a file to import all rules within the file
+	# Remove all newlines and comments
+	lines = [line.strip() for line in lines if line[0] != '#']
+	## Check if line is a file to import all rules within the file
 	for line in lines:
-		to_remove += line
 		filepath = os.path.abspath(os.path.dirname(filename)) + os.sep + line.strip()
 		if os.path.isfile(filepath):
 			more = AggregateRules(filepath)
 			lines = set(list(lines) + list(more))
+	# Remove files
+	lines = [line for line in lines if not os.path.isfile(os.path.abspath(os.path.dirname(filename)) + os.sep + line)]
+
 	return set(lines)
-	#for i, line in enumerate(lines):
-		## Set spec value to the method with the same name as the string
-		#spec[i] = getattr(sys.modules[__name__], line)
 
 def ProcessFileData(filename, lines, spec):
 	linenum = 1
@@ -204,27 +112,38 @@ def ProcessFile(filename, spec):
 		return
 	ProcessFileData(filename, lines, spec)
 
+def ResolveRules(rules):
+	resolved = []
+	for rule in rules:
+		m = rule[:rule.rfind('.')]
+		r = rule[rule.rfind('.')+1:]
+		try:
+			importlib.import_module(m)
+			res = getattr(sys.modules[m], r)()
+			resolved.append(res)
+		except AttributeError:
+			console_print("Rule does not exist: %s" % rule, f=sys.stderr)
+	return resolved
 
 def main():
 	global colorize
+
 	argv = docopt(__doc__, version='0.1.0rc')
-	spec = {}
+
+	rules = []
 	colorize = argv['--color']
+
 	if argv['--spec'] is not None:
-		spec = AggregateRules(argv['--spec'])
-		spec = dict.fromkeys(spec, 0)
-		# keep track of keys to delete that do not have a respective method since
-		# we cannot modify the dict as we iterate over it
-		todel = []
-		for k in spec.iterkeys():
-			try:
-				spec[k] = getattr(sys.modules[__name__], k)
-			except:
-				todel.append(k)
-		for k in todel:
-			del spec[k]
+		spec_args = argv['--spec'].split(',')
+		# Check if --spec is a file
+		if len(spec_args) == 1 and os.path.isfile(spec_args[0]):
+			rules = AggregateRules(spec_args[0])
+		else:
+			rules = spec_args
+
+		rules = ResolveRules(rules)
 	for filename in argv['<file>']:
-		ProcessFile(filename, spec)
+		ProcessFile(filename, rules)
 
 if __name__ == '__main__':
 	main()

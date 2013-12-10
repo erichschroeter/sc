@@ -12,6 +12,7 @@ if exists(source_tree_stylecheck):
         from stylecheck import main
     finally:
         del sys.path[0]
+        sys.path.insert(0, join(dirname(__file__), "..", "stylecheck"))
 else:
     from stylecheck import main
 
