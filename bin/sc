@@ -2,19 +2,10 @@
 
 import sys
 
-from os.path import join, dirname, exists
+from stylecheck import stylecheck
 
-# Use the local stylecheck.py if we are in the source tree.
-source_tree_stylecheck = join(dirname(__file__), "..", "stylecheck", "stylecheck.py")
-if exists(source_tree_stylecheck):
-    sys.path.insert(0, dirname(source_tree_stylecheck))
-    try:
-        from stylecheck import main
-    finally:
-        del sys.path[0]
-        sys.path.insert(0, join(dirname(__file__), "..", "stylecheck"))
-else:
-    from stylecheck import main
+def main():
+	return stylecheck.main()
 
 if __name__ == "__main__":
-    sys.exit( main() )
+    sys.exit(main())
