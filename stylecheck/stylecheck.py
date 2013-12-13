@@ -145,6 +145,3 @@ def main():
 	for filename in argv['<file>']:
 		ProcessFile(filename, rules)
 
-if __name__ == '__main__':
-	main()
-
