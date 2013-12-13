@@ -9,6 +9,12 @@ submitted adheres to that project's specified coding guidelines. The
 alternative is to manually check submitted code for guideline infractions,
 which is prone to human error.
 
+# Installation
+
+Installation should be as simple as:
+
+    python setup.py install
+
 # Development
 
 The style rules are organized via different languages, since each language may
@@ -25,12 +31,13 @@ and [cpplint][0] seemed like a good source.
 ## Adding new rules
 
 New rules should follow the same pattern as the existing rules; derive a new
-class from a `Rule` class and implement `check()`. When a new rule is created
-at least one unit test should be created to test its functionality.
+class from a `Rule` class (defined in `Rule.py`) and implement `check()`. When
+a new rule is created at least one unit test should be created to test its
+functionality.
 
 ## Adding new languages
 
-It is expected a demand for supporting new languages be wanted. The project
+It is expected that additional languages will be in demand. The project
 structure has been set up to aid in the addition of multiple language support.
 Ideally there shouldn't be duplicate code in the project so if rules exist in
 other languages, rather than copying the implementation you should create a new
@@ -38,4 +45,12 @@ derived `Rule` in the language specific package (perhaps even with the same
 name as the existing rule) and call the existing rule's `check()` in the new
 rule's `check()` function.
 
+# Testing
+
+Tests are run using [nose][1]. After installing stylecheck running the unit
+tests should be as easy as:
+
+    nosetests
+
 [0]: http://google-styleguide.googlecode.com/svn/trunk/cpplint/cpplint.py
+[1]: http://nose.readthedocs.org/en/latest/
