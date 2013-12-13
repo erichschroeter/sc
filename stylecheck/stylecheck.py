@@ -118,8 +118,9 @@ def ResolveRules(rules):
 		m = rule[:rule.rfind('.')]
 		r = rule[rule.rfind('.')+1:]
 		try:
-			importlib.import_module(m)
-			res = getattr(sys.modules[m], r)()
+			# prepend stylecheck package for the user to save on typing
+			importlib.import_module('stylecheck.' + m)
+			res = getattr(sys.modules['stylecheck.' + m], r)()
 			resolved.append(res)
 		except AttributeError:
 			console_print("Rule does not exist: %s" % rule, f=sys.stderr)
