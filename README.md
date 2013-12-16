@@ -15,6 +15,25 @@ Installation should be as simple as:
 
     python setup.py install
 
+# Usage
+
+To list supported rules for the **C** language:
+
+    sc --list c
+
+To check against a couple rules, an example would be:
+
+    sc --spec lang.c.whitespace.IndentTabsOnly,lang.c.whitespace.NoExtraWhitespace main.c
+
+Optionally, the `--spec` option takes a file argument. This is useful when
+many rules are specified. This spec file should contain a list of rules; one
+rule per line.
+
+    # Create a rule specification containing all known C rules
+    sc --list c > rules.spec
+    # Check main.c against the rule specification
+    sc --spec rules.spec main.c
+
 # Development
 
 The style rules are organized via different languages, since each language may
