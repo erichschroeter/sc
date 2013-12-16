@@ -2,10 +2,10 @@
 
 import sys
 
-from stylecheck import stylecheck
+from stylecheck import sc
 
 def main():
-	return stylecheck.main()
+	return sc.main()
 
 if __name__ == "__main__":
     sys.exit(main())
