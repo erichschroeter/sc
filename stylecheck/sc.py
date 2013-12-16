@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 """
-usage: sc [options] <file>...
+usage: sc [options] [<file> ...]
 
 options:
   -v, --version   Print the version
@@ -135,7 +135,7 @@ def main():
 	rules = []
 	colorize = argv['--color']
 
-	if argv['--spec'] is not None:
+	if argv['--spec'] is not None and argv['<file>']:
 		spec_args = argv['--spec'].split(',')
 		# Check if --spec is a file
 		if len(spec_args) == 1 and os.path.isfile(spec_args[0]):
@@ -144,6 +144,6 @@ def main():
 			rules = spec_args
 
 		rules = ResolveRules(rules)
-	for filename in argv['<file>']:
-		ProcessFile(filename, rules)
+		for filename in argv['<file>']:
+			ProcessFile(filename, rules)
 
