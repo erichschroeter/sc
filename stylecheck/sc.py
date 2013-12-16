@@ -127,9 +127,10 @@ def ResolveRules(rules):
 	return resolved
 
 def main():
+	import stylecheck.lang
 	global colorize
 
-	argv = docopt(__doc__, version='0.1.0rc')
+	argv = docopt(__doc__, version=stylecheck.__version__)
 
 	rules = []
 	colorize = argv['--color']
