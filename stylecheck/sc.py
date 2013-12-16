@@ -3,16 +3,18 @@
 usage: sc [options] [<file> ...]
 
 options:
-  -v, --version   Print the version
-  -h, --help      Print this help menu
-  --spec <file>   Specify the set of rules to check
-  --color         Use color output
+  -v, --version                 Print the version
+  -h, --help                    Print this help menu
+  --list [lang],...             List all available rules. Optionally filter by language.
+  --spec <file> | <rule>,...    Specify the set of rules to check
+  --color                       Use color output
 """
 import os
 import sys
 import codecs
 import string
 import importlib
+import inspect
 
 from docopt import docopt
 
@@ -126,6 +128,9 @@ def ResolveRules(rules):
 			console_print("Rule does not exist: %s" % rule, f=sys.stderr)
 	return resolved
 
+def find_subclasses(module, clazz):
+	return [cls for name, cls in inspect.getmembers(module) if inspect.isclass(cls) and issubclass(cls, clazz)]
+
 def main():
 	import stylecheck.lang
 	global colorize
@@ -134,6 +139,32 @@ def main():
 
 	rules = []
 	colorize = argv['--color']
+
+	if argv['--list']:
+		import pkgutil
+		import Rule
+
+		langs = argv['--list'].split(',')
+
+		for lang in langs:
+			package = 'stylecheck.lang.' + lang
+			try:
+				package = importlib.import_module(package)
+			except ImportError:
+				continue
+
+			# iterate over all the modules in the language package looking for rules
+			for importer, modname, ispkg in pkgutil.walk_packages(path=package.__path__,
+				prefix=package.__name__ + '.',
+				onerror=lambda x: None):
+				mod = importlib.import_module(modname)
+				if not inspect.ismodule(mod):
+					continue
+				rules = find_subclasses(mod, Rule.Rule)
+				for rule in rules:
+					pkg = rule.__module__[rule.__module__.find('.') + 1:]
+					print(pkg + rule.__name__)
+		return
 
 	if argv['--spec'] is not None and argv['<file>']:
 		spec_args = argv['--spec'].split(',')
