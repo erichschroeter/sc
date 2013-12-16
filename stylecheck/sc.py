@@ -163,7 +163,7 @@ def main():
 				rules = find_subclasses(mod, Rule.Rule)
 				for rule in rules:
 					pkg = rule.__module__[rule.__module__.find('.') + 1:]
-					print(pkg + rule.__name__)
+					print(pkg + '.' + rule.__name__)
 		return
 
 	if argv['--spec'] is not None and argv['<file>']:
