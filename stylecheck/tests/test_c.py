@@ -1,6 +1,6 @@
 import unittest
 
-from .. import stylecheck as sc
+from .. import sc
 
 class TestCIndentation(unittest.TestCase):
 	def setUp(self):
